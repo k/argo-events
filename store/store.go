@@ -25,6 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/scheme"
 
+	tekton "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/scheme"
+
 	// import packages for the universal deserializer
 	gw_v1alpha1 "github.com/argoproj/argo-events/pkg/apis/gateway/v1alpha1"
 	ss_v1alpha1 "github.com/argoproj/argo-events/pkg/apis/sensor/v1alpha1"
@@ -41,6 +43,9 @@ func init() {
 		panic(err)
 	}
 	if err := gw_v1alpha1.AddToScheme(scheme.Scheme); err != nil {
+		panic(err)
+	}
+	if err := tekton.AddToScheme(scheme.Scheme); err != nil {
 		panic(err)
 	}
 }

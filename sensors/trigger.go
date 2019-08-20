@@ -30,7 +30,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/deprecated-dynamic"
 )
 
 // canProcessTriggers evaluates whether triggers can be processed and executed
@@ -240,7 +240,7 @@ func (sec *sensorExecutionCtx) executeTrigger(trigger v1alpha1.Trigger) error {
 }
 
 // applyTriggerPolicy applies backoff and evaluates success/failure for a trigger
-func (sec *sensorExecutionCtx) applyTriggerPolicy(trigger *v1alpha1.Trigger, resourceInterface dynamic.ResourceInterface, name, namespace string) error {
+func (sec *sensorExecutionCtx) applyTriggerPolicy(trigger *v1alpha1.Trigger, resourceInterface deprecated_dynamic.ResourceInterface, name, namespace string) error {
 	err := wait.ExponentialBackoff(wait.Backoff{
 		Duration: trigger.Policy.Backoff.Duration,
 		Steps:    trigger.Policy.Backoff.Steps,
