@@ -10,6 +10,8 @@ require (
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578
 	github.com/Shopify/sarama v1.22.1
 	github.com/argoproj/argo v2.2.1+incompatible
+	github.com/argoproj/argo-cd v1.1.2
+	github.com/argoproj/pkg v0.0.0-20190819221509-1032539fc7f1 // indirect
 	github.com/aws/aws-sdk-go v0.0.0-20190510182851-594c848f324d
 	github.com/colinmarc/hdfs v0.0.0-20180802165501-48eb8d6c34a9
 	github.com/davecgh/go-spew v1.1.1
@@ -38,6 +40,7 @@ require (
 	github.com/golang/snappy v0.0.1
 	github.com/google/btree v1.0.0 // indirect
 	github.com/google/go-cmp v0.3.1 // indirect
+	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-github/v24 v24.0.1 // indirect
 	github.com/google/go-querystring v1.0.0
 	github.com/google/gofuzz v1.0.0
@@ -58,6 +61,7 @@ require (
 	github.com/joncalhoun/qson v0.0.0-20170526102502-8a9cab3a62b1
 	github.com/json-iterator/go v1.1.7
 	github.com/jtolds/gls v4.20.0+incompatible
+	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/kevinburke/ssh_config v0.0.0-20180830205328-81db2a75821e
 	github.com/knative/pkg v0.0.0-20190612215543-68737b1b4e03 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2

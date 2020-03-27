@@ -27,6 +27,7 @@ import (
 
 	tekton "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/scheme"
 
+	app_v1alpha1 "github.com/argoproj/argo-cd/pkg/apis/application/v1alpha1"
 	// import packages for the universal deserializer
 	gw_v1alpha1 "github.com/argoproj/argo-events/pkg/apis/gateway/v1alpha1"
 	ss_v1alpha1 "github.com/argoproj/argo-events/pkg/apis/sensor/v1alpha1"
@@ -48,6 +49,13 @@ func init() {
 	if err := tekton.AddToScheme(scheme.Scheme); err != nil {
 		panic(err)
 	}
+	scheme.Scheme.AddKnownTypes(
+		app_v1alpha1.SchemeGroupVersion,
+		&app_v1alpha1.Application{},
+		&app_v1alpha1.ApplicationList{},
+		&app_v1alpha1.AppProject{},
+		&app_v1alpha1.AppProjectList{},
+	)
 }
 
 // ArtifactReader enables reading artifacts from an external store
