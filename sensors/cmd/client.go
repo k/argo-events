@@ -18,14 +18,15 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/argoproj/argo-events/common"
 	sv1 "github.com/argoproj/argo-events/pkg/client/sensor/clientset/versioned"
-	sc "github.com/argoproj/argo-events/sensors"
+	"github.com/argoproj/argo-events/sensors"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/deprecated-dynamic"
-	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
-	"os"
 )
 
 func main() {
@@ -42,7 +43,7 @@ func main() {
 	if !ok {
 		panic("sensor namespace is not provided")
 	}
-	controllerInstanceID, ok := os.LookupEnv(common.EnvVarSensorControllerInstanceID)
+	controllerInstanceID, ok := os.LookupEnv(common.EnvVarControllerInstanceID)
 	if !ok {
 		panic("sensor controller instance ID is not provided")
 	}
@@ -54,13 +55,15 @@ func main() {
 	kubeClient := kubernetes.NewForConfigOrDie(restConfig)
 	sensor, err := sensorClient.ArgoprojV1alpha1().Sensors(sensorNamespace).Get(sensorName, metav1.GetOptions{})
 	if err != nil {
-		panic(fmt.Errorf("failed to retrieve sensor. err: %+v", err))
+		panic(errors.Errorf("failed to retrieve sensor. err: %+v", err))
 	}
 
-	clientPool := deprecated_dynamic.NewDynamicClientPool(restConfig)
-	disco := discovery.NewDiscoveryClientForConfigOrDie(restConfig)
+	dynamicClient := dynamic.NewForConfigOrDie(restConfig)
 
 	// wait for sensor http server to shutdown
-	sensorExecutionCtx := sc.NewSensorExecutionCtx(sensorClient, kubeClient, clientPool, disco, sensor, controllerInstanceID)
-	sensorExecutionCtx.WatchEventsFromGateways()
+	sensorExecutionCtx := sensors.NewSensorContext(sensorClient, kubeClient, dynamicClient, sensor, controllerInstanceID)
+	if err := sensorExecutionCtx.ListenEvents(); err != nil {
+		sensorExecutionCtx.Logger.WithError(err).Errorln("failed to listen to events")
+		os.Exit(-1)
+	}
 }

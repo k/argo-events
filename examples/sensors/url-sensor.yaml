@@ -4,30 +4,30 @@ metadata:
   name: url-sensor
   labels:
     sensors.argoproj.io/sensor-controller-instanceid: argo-events
-    # sensor controller will use this label to match with it's own version
-    # do not remove
-    argo-events-sensor-version: v0.10
 spec:
   template:
     spec:
       containers:
-        - name: "sensor"
-          image: "argoproj/sensor"
+        - name: sensor
+          image: argoproj/sensor:v0.13.0
           imagePullPolicy: Always
       serviceAccountName: argo-events-sa
-  eventProtocol:
-    type: "HTTP"
+  subscription:
     http:
-      port: "9300"
+      port: 9300
   dependencies:
-    - name: "artifact-gateway:input"
+    - name: test-dep
+      gatewayName: webhook-gateway
+      eventName: example
   triggers:
     - template:
         name: url-workflow-trigger
-        group: argoproj.io
-        version: v1alpha1
-        kind: Workflow
-        source:
-          url:
-            path: "https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-world.yaml"
-            verifycert: false
+        k8s:
+          group: argoproj.io
+          version: v1alpha1
+          resource: workflows
+          operation: create
+          source:
+            url:
+              path: "https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-world.yaml"
+              verifycert: false

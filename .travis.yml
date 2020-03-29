@@ -13,7 +13,6 @@ cache:
 env:
   global:
     - DOCKER_PUSH=false
-    - IMAGE_TAG=v0.10-test
     - PATH=$HOME/bin:$PATH
 
 before_install:
@@ -21,9 +20,9 @@ before_install:
   - if [[ -d $HOME/docker ]]; then ls $HOME/docker/*.tar.gz | xargs -I {file} sh -c "zcat {file} | docker load"; fi
   - go get github.com/mattn/goveralls
   - if [ ! -d $HOME/bin/kubectl ]; then
-      mkdir -p $HOME/bin;
-      curl -o $HOME/bin/kubectl -L https://storage.googleapis.com/kubernetes-release/release/v1.13.4/bin/linux/amd64/kubectl;
-      chmod +x $HOME/bin/kubectl;
+    mkdir -p $HOME/bin;
+    curl -o $HOME/bin/kubectl -L https://storage.googleapis.com/kubernetes-release/release/v1.13.4/bin/linux/amd64/kubectl;
+    chmod +x $HOME/bin/kubectl;
     fi
 
 before_cache:
@@ -37,13 +36,6 @@ install:
   - dep ensure -vendor-only
 
 script:
+  - make test
   - make all
   - make test coverage
-  - $GOPATH/bin/goveralls -coverprofile=profile.cov -service=travis-ci
-
-deploy:
-  provider: releases
-  api_key: $GITHUB_OAUTH_TOKEN
-  skip_cleanup: true
-  on:
-    tags: true

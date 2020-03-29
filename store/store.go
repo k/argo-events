@@ -18,12 +18,6 @@ package store
 
 import (
 	"fmt"
-	"k8s.io/client-go/kubernetes"
-
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/kubernetes/scheme"
 
 	tekton "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/scheme"
 
@@ -31,8 +25,14 @@ import (
 	// import packages for the universal deserializer
 	gw_v1alpha1 "github.com/argoproj/argo-events/pkg/apis/gateway/v1alpha1"
 	ss_v1alpha1 "github.com/argoproj/argo-events/pkg/apis/sensor/v1alpha1"
+	rollouts_v1alpha1 "github.com/argoproj/argo-rollouts/pkg/apis/rollouts/v1alpha1"
 	wf_v1alpha1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
 )
 
 // NOTE: custom resources must be manually added here
@@ -56,7 +56,14 @@ func init() {
 		&app_v1alpha1.AppProject{},
 		&app_v1alpha1.AppProjectList{},
 	)
+	if err := rollouts_v1alpha1.AddToScheme(scheme.Scheme); err != nil {
+		panic(err)
+	}
 }
+
+var (
+	registry = runtime.NewEquivalentResourceRegistry()
+)
 
 // ArtifactReader enables reading artifacts from an external store
 type ArtifactReader interface {
@@ -64,14 +71,14 @@ type ArtifactReader interface {
 }
 
 // FetchArtifact from the location, decode it using explicit types, and unstructure it
-func FetchArtifact(reader ArtifactReader, gvk *metav1.GroupVersionKind) (*unstructured.Unstructured, error) {
+func FetchArtifact(reader ArtifactReader, gvr *metav1.GroupVersionResource) (*unstructured.Unstructured, error) {
 	var err error
 	var obj []byte
 	obj, err = reader.Read()
 	if err != nil {
 		return nil, err
 	}
-	return decodeAndUnstructure(obj, gvk)
+	return decodeAndUnstructure(obj, gvr)
 }
 
 // GetArtifactReader returns the ArtifactReader for this location
@@ -100,14 +107,14 @@ func GetArtifactReader(loc *ss_v1alpha1.ArtifactLocation, creds *Credentials, cl
 	return nil, fmt.Errorf("unknown artifact location: %v", *loc)
 }
 
-func decodeAndUnstructure(b []byte, gvk *metav1.GroupVersionKind) (*unstructured.Unstructured, error) {
-	gvk1 := &schema.GroupVersionKind{
-		Group:   gvk.Group,
-		Version: gvk.Version,
-		Kind:    gvk.Kind,
-	}
+func decodeAndUnstructure(b []byte, gvr *metav1.GroupVersionResource) (*unstructured.Unstructured, error) {
+	gvk := registry.KindFor(schema.GroupVersionResource{
+		Group:    gvr.Group,
+		Version:  gvr.Version,
+		Resource: gvr.Resource,
+	}, "")
 
-	obj, _, err := scheme.Codecs.UniversalDeserializer().Decode(b, gvk1, nil)
+	obj, _, err := scheme.Codecs.UniversalDeserializer().Decode(b, &gvk, nil)
 	if err != nil {
 		return nil, err
 	}

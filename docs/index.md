@@ -1,9 +1,5 @@
 # Argo Events
 
-<p align="center">
-  <img src="https://github.com/argoproj/argo-events/blob/master/docs/assets/logo.png?raw=true" alt="Logo"/>
-</p>
-
 ## What is Argo Events?
 **Argo Events** is an event-based dependency manager for Kubernetes which helps you define multiple dependencies from a variety of event sources like webhook, s3, schedules, streams etc.
 and trigger Kubernetes objects after successful event dependencies resolution.
@@ -18,23 +14,42 @@ and trigger Kubernetes objects after successful event dependencies resolution.
 <br/>
 
 ## Features 
-* Manage dependencies from a variety of event sources.
+* Manage dependencies from 20+ event sources.
 * Ability to customize business-level constraint logic for event dependencies resolution.
 * Manage everything from simple, linear, real-time dependencies to complex, multi-source, batch job dependencies.
-* Ability to extends framework to add your own event source listener.
-* Define arbitrary boolean logic to resolve event dependencies.
+* Supports AWS Lambda and OpenFaas as triggers.
+* Supports integration of existing API servers with 20+ event sources.
 * CloudEvents compliant.
-* Ability to manage event sources at runtime.
 
-## Core Concepts
-The framework is made up of two components: 
+## Event Sources
+1. AMQP
+2. AWS SNS
+3. AWS SQS
+4. Cron Schedules
+5. GCP PubSub
+6. GitHub
+7. GitLab
+8. HDFS
+9. File Based Events
+10. Kafka
+11. Minio
+12. NATS
+13. MQTT
+14. K8s Resources
+15. Slack
+16. NetApp StorageGrid
+17. Webhooks
+18. Stripe
+19. NSQ
+20. Emitter
+21. Redis
+22. Azure Events Hub
 
- 1. **Gateway** which is implemented as a Kubernetes-native Custom Resource Definition processes events from event source.
+## Installation
+Follow the [setup](https://argoproj.github.io/argo-events/installation/) to install Argo Events.
 
- 2. **Sensor** which is implemented as a Kubernetes-native Custom Resource Definition defines a set of event dependencies and triggers K8s resources.
+## Quick Start
+Check out the quick start [guide](https://argoproj.github.io/argo-events/quick_start/) to trigger Argo workflows on webhook events.
 
- 3. **Event Source** is a configmap that contains configurations which is interpreted by gateway as source for events producing entity. 
-
-## In Nutshell
-Gateway monitors event sources and starts routines in parallel that consume events from entities like S3, Github, SNS, SQS,
-PubSub etc. and dispatch these events to sensor. Sensor upon receiving the events, evaluates the dependencies and triggers Argo workflows or other K8s resources.
+## Deep Dive
+Explore the [tutorial](https://argoproj.github.io/argo-events/tutorials/01-introduction/) to dive deep into Argo Events features.

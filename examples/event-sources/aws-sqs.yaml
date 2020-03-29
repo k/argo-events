@@ -1,47 +1,61 @@
-# This configmap contains the event sources configurations for AWS SQS gateway
-
----
-apiVersion: v1
-kind: ConfigMap
+apiVersion: argoproj.io/v1alpha1
+kind: EventSource
 metadata:
   name: aws-sqs-event-source
-  labels:
-    # do not remove
-    argo-events-event-source-version: v0.10
-data:
-  example-1: |-
-    # accessKey contains information about K8s secret that stores the access key
-    accessKey:
-      # Key within the K8s secret whose corresponding value (must be base64 encoded) is access key
-      key: accesskey
-      # Name of the K8s secret that contains the access key
-      name: aws-secret
-    # secretKey contains information about K8s secret that stores the secret key
-    secretKey:
-      # Key within the K8s secret whose corresponding value (must be base64 encoded) is secret key
-      key: secretkey
-      # Name of the K8s secret that contains the secret key
-      name: aws-secret
-    # aws region
-    region: "us-east-1"
-    # name of the queue. The gateway resolves the url of the queue from the queue name.
-    queue: "my-fake-queue-1"
-    # The duration (in seconds) for which the call waits for a message to arrive in the queue before returning.
-    # MUST BE > 0 AND <= 20
-    waitTimeSeconds: 20
+spec:
+  type: "sqs"
+  sqs:
+    example:
+      # jsonBody specifies that all event body payload coming from this
+      # source will be JSON
+      jsonBody: true
+      # accessKey contains information about K8s secret that stores the access key
+      accessKey:
+        # Key within the K8s secret whose corresponding value (must be base64 encoded) is access key
+        key: accesskey
+        # Name of the K8s secret that contains the access key
+        name: aws-secret
+      # secretKey contains information about K8s secret that stores the secret key
+      secretKey:
+        # Key within the K8s secret whose corresponding value (must be base64 encoded) is secret key
+        key: secretkey
+        # Name of the K8s secret that contains the secret key
+        name: aws-secret
 
-  example-2: |-
-    accessKey:
-      key: accesskey
-      name: aws-secret
-    secretKey:
-      key: secretkey
-      name: aws-secret
-    region: "us-east-1"
-    queue: "my-fake-queue-2"
-    waitTimeSeconds: 20
+#      # Namespace to read secrets from.
+#      # +Optional. Default to gateway's namespace.
+#      namespace: "argo-events"
 
-  example-3: |-
-    region: "us-east-1"
-    queue: "my-fake-queue-2"
-    waitTimeSeconds: 20
+
+      # aws region
+      region: "us-east-1"
+      # name of the queue. The gateway resolves the url of the queue from the queue name.
+      queue: "test"
+      # The duration (in seconds) for which the call waits for a message to arrive in the queue before returning.
+      # MUST BE > 0 AND <= 20
+      waitTimeSeconds: 20
+
+
+#    example-without-credentials:
+#      # If AWS access credentials are already present on the Pod's IAM role running the Gateway,
+#      # the AWS session will utilize the existing config and hence we do not need to provide explicit credentials.
+#      region: "us-east-1"
+#      queue: "my-fake-queue-2"
+#      waitTimeSeconds: 20
+
+#     cross-aws-account:
+#       # Make sure AWS access credentials have permissions to "GetQueueUrl", "ReceiveMessage", and "DeleteMessage" of cross account Queue
+#       accessKey:
+#         key: accesskey
+#         name: aws-secret
+#       secretKey:
+#         key: secretkey
+#         name: aws-secret
+#       namespace: argo-events
+#       region: "us-east-1"
+#       # name of queue to monitor
+#       queue: "other-queue-name-3"
+#       # AWS Account Id that created the queue
+#       queueAccountId: "12345678"
+#       waitTimeSeconds: 20
+

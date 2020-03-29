@@ -18,6 +18,8 @@ package store
 
 import (
 	"fmt"
+	"io/ioutil"
+
 	"github.com/argoproj/argo-events/pkg/apis/sensor/v1alpha1"
 	"golang.org/x/crypto/ssh"
 	"gopkg.in/src-d/go-git.v4"
@@ -26,7 +28,6 @@ import (
 	"gopkg.in/src-d/go-git.v4/plumbing/transport"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 	go_git_ssh "gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
-	"io/ioutil"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -68,7 +69,7 @@ func getSSHKeyAuth(sshKeyFile string) (transport.AuthMethod, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read ssh key file. err: %+v", err)
 	}
-	signer, err := ssh.ParsePrivateKey([]byte(sshKey))
+	signer, err := ssh.ParsePrivateKey(sshKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse ssh key. err: %+v", err)
 	}
@@ -138,6 +139,13 @@ func (g *GitArtifactReader) readFromRepository(r *git.Repository) ([]byte, error
 		fetchOptions.Auth = auth
 	}
 
+	// In the case of a specific given ref, it isn't necessary to fetch anything
+	// but the single ref
+	if g.artifact.Ref != "" {
+		fetchOptions.Depth = 1
+		fetchOptions.RefSpecs = []config.RefSpec{config.RefSpec(g.artifact.Ref + ":" + g.artifact.Ref)}
+	}
+
 	if err := r.Fetch(fetchOptions); err != nil && err != git.NoErrAlreadyUpToDate {
 		return nil, fmt.Errorf("failed to fetch. err: %v", err)
 	}
@@ -146,17 +154,20 @@ func (g *GitArtifactReader) readFromRepository(r *git.Repository) ([]byte, error
 		return nil, fmt.Errorf("failed to checkout. err: %+v", err)
 	}
 
-	pullOpts := &git.PullOptions{
-		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
-		ReferenceName:     g.getBranchOrTag().Branch,
-		Force:             true,
-	}
-	if auth != nil {
-		pullOpts.Auth = auth
-	}
+	// In the case of a specific given ref, it shouldn't be necessary to pull
+	if g.artifact.Ref != "" {
+		pullOpts := &git.PullOptions{
+			RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
+			ReferenceName:     g.getBranchOrTag().Branch,
+			Force:             true,
+		}
+		if auth != nil {
+			pullOpts.Auth = auth
+		}
 
-	if err := w.Pull(pullOpts); err != nil && err != git.NoErrAlreadyUpToDate {
-		return nil, fmt.Errorf("failed to pull latest updates. err: %+v", err)
+		if err := w.Pull(pullOpts); err != nil && err != git.NoErrAlreadyUpToDate {
+			return nil, fmt.Errorf("failed to pull latest updates. err: %+v", err)
+		}
 	}
 
 	return ioutil.ReadFile(fmt.Sprintf("%s/%s", g.artifact.CloneDirectory, g.artifact.FilePath))
@@ -172,6 +183,9 @@ func (g *GitArtifactReader) getBranchOrTag() *git.CheckoutOptions {
 	}
 	if g.artifact.Tag != "" {
 		opts.Branch = plumbing.NewTagReferenceName(g.artifact.Tag)
+	}
+	if g.artifact.Ref != "" {
+		opts.Branch = plumbing.ReferenceName(g.artifact.Ref)
 	}
 
 	return opts
@@ -195,6 +209,12 @@ func (g *GitArtifactReader) Read() ([]byte, error) {
 		}
 		if auth != nil {
 			cloneOpt.Auth = auth
+		}
+
+		// In the case of a specific given ref, it isn't necessary to have branch
+		// histories
+		if g.artifact.Ref != "" {
+			cloneOpt.Depth = 1
 		}
 
 		r, err = git.PlainClone(g.artifact.CloneDirectory, false, cloneOpt)

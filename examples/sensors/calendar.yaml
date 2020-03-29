@@ -5,52 +5,52 @@ metadata:
   labels:
     # sensor controller with instanceId "argo-events" will process this sensor
     sensors.argoproj.io/sensor-controller-instanceid: argo-events
-    # sensor controller will use this label to match with it's own version
-    # do not remove
-    argo-events-sensor-version: v0.10
 spec:
   template:
     spec:
       containers:
-        - name: "sensor"
-          image: "argoproj/sensor"
+        - name: sensor
+          image: argoproj/sensor:v0.13.0
           imagePullPolicy: Always
       serviceAccountName: argo-events-sa
   dependencies:
-    - name: "calendar-gateway:example-with-interval"
-  eventProtocol:
-    type: "HTTP"
+    - name: test-dep
+      gatewayName: calendar-gateway
+      eventName: example-with-interval
+  subscription:
     http:
-      port: "9300"
+      port: 9300
   triggers:
     - template:
         name: calendar-workflow-trigger
-        group: argoproj.io
-        version: v1alpha1
-        kind: Workflow
-        source:
-          inline: |
-            apiVersion: argoproj.io/v1alpha1
-            kind: Workflow
-            metadata:
-              generateName: calendar-workflow-
-            spec:
-              entrypoint: whalesay
-              arguments:
-                parameters:
-                - name: message
-                  # this is the value that should be overridden
-                  value: hello world
-              templates:
-              - name: whalesay
-                inputs:
+        k8s:
+          group: argoproj.io
+          version: v1alpha1
+          resource: workflows
+          operation: create
+          source:
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Workflow
+              metadata:
+                generateName: calendar-workflow-
+              spec:
+                entrypoint: whalesay
+                arguments:
                   parameters:
                   - name: message
-                container:
-                  image: docker/whalesay:latest
-                  command: [cowsay]
-                  args: ["{{inputs.parameters.message}}"]
-      resourceParameters:
-        - src:
-            event: "calendar-gateway:example-with-interval"
-          dest: spec.arguments.parameters.0.value
+                    # value will get overridden by the event payload
+                    value: hello world
+                templates:
+                - name: whalesay
+                  inputs:
+                    parameters:
+                    - name: message
+                  container:
+                    image: docker/whalesay:latest
+                    command: [cowsay]
+                    args: ["{{inputs.parameters.message}}"]
+          parameters:
+            - src:
+                dependencyName: test-dep
+              dest: spec.arguments.parameters.0.value

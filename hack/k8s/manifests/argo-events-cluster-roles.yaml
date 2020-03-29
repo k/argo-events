@@ -7,9 +7,9 @@ roleRef:
   kind: ClusterRole
   name: argo-events-role
 subjects:
-- kind: ServiceAccount
-  name: argo-events-sa
-  namespace: argo-events
+  - kind: ServiceAccount
+    name: argo-events-sa
+    namespace: argo-events
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -44,10 +44,14 @@ rules:
     resources:
       - workflows
       - workflows/finalizers
+      - workflowtemplates
+      - workflowtemplates/finalizers
       - gateways
       - gateways/finalizers
       - sensors
       - sensors/finalizers
+      - eventsources
+      - eventsources/finalizers
   - apiGroups:
       - ""
     resources:
@@ -79,9 +83,7 @@ rules:
       - patch
       - delete
   - apiGroups:
-      - "apps/v1"
-      - "apps/v1beta2"
-      - "apps/v1beta1"
+      - "apps"
     resources:
       - deployments
     verbs:
@@ -92,3 +94,70 @@ rules:
       - update
       - patch
       - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+  name: argo-events-aggregate-to-admin
+rules:
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - gateways
+      - gateways/finalizers
+      - sensors
+      - sensors/finalizers
+    verbs:
+      - create
+      - delete
+      - deletecollection
+      - get
+      - list
+      - patch
+      - update
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+  name: argo-events-aggregate-to-edit
+rules:
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - gateways
+      - gateways/finalizers
+      - sensors
+      - sensors/finalizers
+    verbs:
+      - create
+      - delete
+      - deletecollection
+      - get
+      - list
+      - patch
+      - update
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+  name: argo-events-aggregate-to-view
+rules:
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - gateways
+      - gateways/finalizers
+      - sensors
+      - sensors/finalizers
+    verbs:
+      - get
+      - list
+      - watch

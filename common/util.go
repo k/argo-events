@@ -21,11 +21,14 @@ import (
 	"fmt"
 	"hash/fnv"
 	"net/http"
+	"strings"
 
-	corev1 "k8s.io/api/core/v1"
+	"github.com/pkg/errors"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -35,9 +38,9 @@ func DefaultConfigMapName(controllerName string) string {
 	return fmt.Sprintf("%s-configmap", controllerName)
 }
 
-// DefaultServiceName returns a formulated name for a service
-func DefaultServiceName(serviceName string) string {
-	return fmt.Sprintf("%s-svc", serviceName)
+// ServiceDNSName returns a formulated dns name for a service
+func ServiceDNSName(serviceName, namespace string) string {
+	return fmt.Sprintf("%s.%s.svc.cluster.local", serviceName, namespace)
 }
 
 // DefaultEventSourceName returns a formulated name for a gateway configuration
@@ -75,19 +78,25 @@ func ServerResourceForGroupVersionKind(disco discovery.DiscoveryInterface, gvk s
 // SendSuccessResponse sends http success response
 func SendSuccessResponse(writer http.ResponseWriter, response string) {
 	writer.WriteHeader(http.StatusOK)
-	writer.Write([]byte(response))
+	if _, err := writer.Write([]byte(response)); err != nil {
+		fmt.Printf("failed to write the response. err: %+v\n", err)
+	}
 }
 
 // SendErrorResponse sends http error response
 func SendErrorResponse(writer http.ResponseWriter, response string) {
 	writer.WriteHeader(http.StatusBadRequest)
-	writer.Write([]byte(response))
+	if _, err := writer.Write([]byte(response)); err != nil {
+		fmt.Printf("failed to write the response. err: %+v\n", err)
+	}
 }
 
 // SendInternalErrorResponse sends http internal error response
 func SendInternalErrorResponse(writer http.ResponseWriter, response string) {
 	writer.WriteHeader(http.StatusInternalServerError)
-	writer.Write([]byte(response))
+	if _, err := writer.Write([]byte(response)); err != nil {
+		fmt.Printf("failed to write the response. err: %+v\n", err)
+	}
 }
 
 // Hasher hashes a string
@@ -106,12 +115,32 @@ func GetObjectHash(obj metav1.Object) (string, error) {
 	return Hasher(string(b)), nil
 }
 
-func CheckEventSourceVersion(cm *corev1.ConfigMap) error {
-	if cm.Labels == nil {
-		return fmt.Errorf("labels can't be empty. event source must be specified in as %s label", LabelArgoEventsEventSourceVersion)
+// FormatEndpoint returns a formatted api endpoint
+func FormatEndpoint(endpoint string) string {
+	if !strings.HasPrefix(endpoint, "/") {
+		return fmt.Sprintf("/%s", endpoint)
 	}
-	if _, ok := cm.Labels[LabelArgoEventsEventSourceVersion]; !ok {
-		return fmt.Errorf("event source must be specified in as %s label", LabelArgoEventsEventSourceVersion)
+	return endpoint
+}
+
+// FormattedURL returns a formatted url
+func FormattedURL(url, endpoint string) string {
+	return fmt.Sprintf("%s%s", url, FormatEndpoint(endpoint))
+}
+
+func ErrEventSourceTypeMismatch(eventSourceType string) string {
+	return fmt.Sprintf("event source is not type of %s", eventSourceType)
+}
+
+// GetSecrets retrieves the secret value from the secret in namespace with name and key
+func GetSecrets(client kubernetes.Interface, namespace string, selector *v1.SecretKeySelector) (string, error) {
+	secret, err := client.CoreV1().Secrets(namespace).Get(selector.Name, metav1.GetOptions{})
+	if err != nil {
+		return "", err
 	}
-	return nil
+	val, ok := secret.Data[selector.Key]
+	if !ok {
+		return "", errors.Errorf("secret '%s' does not have the key '%s'", selector.Name, selector.Key)
+	}
+	return string(val), nil
 }

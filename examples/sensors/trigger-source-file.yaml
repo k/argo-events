@@ -5,31 +5,36 @@ metadata:
   labels:
     # sensor controller with instanceId "argo-events" will process this sensor
     sensors.argoproj.io/sensor-controller-instanceid: argo-events
-    # sensor controller will use this label to match with it's own version
-    # do not remove
-    argo-events-sensor-version: v0.10
 spec:
   template:
     spec:
       containers:
-        - name: "sensor"
-          image: "argoproj/sensor"
+        - name: sensor
+          image: argoproj/sensor:v0.13.0
           imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: /workflows/hello_world.yaml
+              name: workflow-file
+      volumes:
+        - name: workflow-file
+          configMap:
+            name: configmap-that-contains-the-workflow-definition
       serviceAccountName: argo-events-sa
   dependencies:
-    - name: "calendar-gateway:foo"
-  eventProtocol:
-    type: "HTTP"
+    - name: test-dep
+      gatewayName: webhook-gateway
+      eventName: example
+  subscription:
     http:
-      port: "9300"
+      port: 9300
   triggers:
     - template:
         name: file-workflow-trigger
-        group: argoproj.io
-        version: v1alpha1
-        kind: Workflow
-        # The following requires that the sensor-controller be run with a
-        # volume mount that has the workflow yamls in it.
-        source:
-          file:
-            path: /workflows/hello_world.yaml
+        k8s:
+          group: argoproj.io
+          version: v1alpha1
+          resource: workflows
+          operation: create
+          source:
+            file:
+              path: /workflows/hello_world.yaml

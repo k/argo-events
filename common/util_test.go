@@ -17,11 +17,10 @@ limitations under the License.
 package common
 
 import (
-	"fmt"
-	"github.com/smartystreets/goconvey/convey"
 	"net/http"
 	"testing"
 
+	"github.com/smartystreets/goconvey/convey"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -66,12 +65,6 @@ func TestDefaultConfigMapName(t *testing.T) {
 	assert.Equal(t, "sensor-controller-configmap", res)
 }
 
-func TestDefaultServiceName(t *testing.T) {
-	convey.Convey("Given a service, get the default name", t, func() {
-		convey.So(DefaultServiceName("default"), convey.ShouldEqual, fmt.Sprintf("%s-svc", "default"))
-	})
-}
-
 func TestDefaultNatsQueueName(t *testing.T) {
 	convey.Convey("Given a nats queue, get the default name", t, func() {
 		convey.So(DefaultNatsQueueName("default"), convey.ShouldEqual, "default-queue")
@@ -112,5 +105,17 @@ func TestServerResourceForGroupVersionKind(t *testing.T) {
 				convey.So(apiresource, convey.ShouldBeNil)
 			})
 		})
+	})
+}
+
+func TestFormatWebhookEndpoint(t *testing.T) {
+	convey.Convey("Given a webhook endpoint, format it", t, func() {
+		convey.So(FormatEndpoint("hello"), convey.ShouldEqual, "/hello")
+	})
+}
+
+func TestGenerateFormattedURL(t *testing.T) {
+	convey.Convey("Given a webhook, generate formatted URL", t, func() {
+		convey.So(FormattedURL("test-url", "fake"), convey.ShouldEqual, "test-url/fake")
 	})
 }

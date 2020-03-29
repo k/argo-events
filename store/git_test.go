@@ -84,7 +84,7 @@ func TestGetGitAuth(t *testing.T) {
 }
 
 func TestGetBranchOrTag(t *testing.T) {
-	convey.Convey("Given a git artifact, get the branch or tag", t, func() {
+	convey.Convey("Given a git minio, get the branch or tag", t, func() {
 		br := gar.getBranchOrTag()
 		convey.So(br.Branch, convey.ShouldEqual, "refs/heads/master")
 		gar.artifact.Branch = "br"
@@ -93,5 +93,11 @@ func TestGetBranchOrTag(t *testing.T) {
 		gar.artifact.Tag = "t"
 		tag := gar.getBranchOrTag()
 		convey.So(tag.Branch, convey.ShouldNotEqual, "refs/heads/master")
+	})
+
+	convey.Convey("Given a git minio with a specific ref, get the ref", t, func() {
+		gar.artifact.Ref = "refs/something/weird/or/specific"
+		br := gar.getBranchOrTag()
+		convey.So(br.Branch, convey.ShouldEqual, "refs/something/weird/or/specific")
 	})
 }

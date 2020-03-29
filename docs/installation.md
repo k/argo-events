@@ -1,11 +1,12 @@
 # Installation
 
-
 ### Requirements
 * Kubernetes cluster >v1.9
 * Installed the [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/) command-line tool >v1.9.0
 
-### Helm Chart
+### Using Helm Chart
+
+Note: This method does not work with Helm 3, only Helm 2.
 
 Make sure you have helm client installed and Tiller server is running. To install helm, follow <a href="https://docs.helm.sh/using_helm/">the link.</a>
 
@@ -15,11 +16,21 @@ Make sure you have helm client installed and Tiller server is running. To instal
 
 2. Install `argo-events` chart
 
-        helm install argo/argo-events
-   
+        helm install argo-events argo/argo-events
 
 ### Using kubectl
-* Deploy Argo Events SA, Roles, ConfigMap, Sensor Controller and Gateway Controller
+
+#### One Command Installation
+
+1. Deploy Argo Events SA, Roles, ConfigMap, Sensor Controller and Gateway Controller
+   
+        kubectl apply -f https://raw.githubusercontent.com/argoproj/argo-events/master/hack/k8s/manifests/installation.yaml
+
+   NOTE: On GKE, you may need to grant your account the ability to create new clusterroles
+
+        kubectl create clusterrolebinding YOURNAME-cluster-admin-binding --clusterrole=cluster-admin --user=YOUREMAIL@gmail.com
+
+#### Step-by-Step Installation
 
 1. Create the namespace
 
@@ -40,19 +51,35 @@ Make sure you have helm client installed and Tiller server is running. To instal
 5. Install the gateway custom resource definition
 
         kubectl apply -n argo-events -f https://raw.githubusercontent.com/argoproj/argo-events/master/hack/k8s/manifests/gateway-crd.yaml
-            
-6. Create the confimap for sensor controller
+
+6. Install the event source custom resource definition            
+
+        kubectl apply -n argo-events -f https://raw.githubusercontent.com/argoproj/argo-events/master/hack/k8s/manifests/event-source-crd.yaml
+
+7. Create the confimap for sensor controller
     
         kubectl apply -n argo-events -f https://raw.githubusercontent.com/argoproj/argo-events/master/hack/k8s/manifests/sensor-controller-configmap.yaml
     
-7. Create the configmap for gateway controller
+8. Create the configmap for gateway controller
 
         kubectl apply -n argo-events -f https://raw.githubusercontent.com/argoproj/argo-events/master/hack/k8s/manifests/gateway-controller-configmap.yaml
     
-8. Deploy the sensor controller
+9. Deploy the sensor controller
 
         kubectl apply -n argo-events -f https://raw.githubusercontent.com/argoproj/argo-events/master/hack/k8s/manifests/sensor-controller-deployment.yaml
     
-9. Deploy the gateway controller
+10. Deploy the gateway controller
 
         kubectl apply -n argo-events -f https://raw.githubusercontent.com/argoproj/argo-events/master/hack/k8s/manifests/gateway-controller-deployment.yaml
+
+## Deploy at cluster level
+To deploy Argo-Events controllers at cluster level where the controllers will be 
+able to process gateway and sensor objects created in any namespace,
+
+1. Make sure to apply cluster role and binding to the service account,
+
+        kubectl apply -f https://raw.githubusercontent.com/argoproj/argo-events/master/hack/k8s/manifests/argo-events-cluster-roles.yaml
+
+2. Update the configmap for both gateway and sensor and remove the `namespace` key from it.
+
+3. Deploy both gateway and sensor controllers and watch the magic.

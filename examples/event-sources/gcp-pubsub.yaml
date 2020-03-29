@@ -1,19 +1,19 @@
-# This configmap contains the event sources configurations for GCP PubSub gateway
-
----
-apiVersion: v1
-kind: ConfigMap
+apiVersion: argoproj.io/v1alpha1
+kind: EventSource
 metadata:
-  name: gcp-pubsub-configmap
-  labels:
-    # do not remove
-    argo-events-event-source-version: v0.10
-data:
-  example-1: |-
-    # id of your project
-    projectId: "my-fake-project-id"
-    # topic name
-    topic: "my-fake-topic"
-    # Refers to the credential file that is mounted in the gateway pod.
-    # ./validate.go is just a placeholder to make tests pass. Please place the path to actual credentials file :)
-    credentialsFile: "./validate.go"
+  name: gcp-pubsub-event-source
+spec:
+  type: "pubsub"
+  pubSub:
+    example:
+      # jsonBody specifies that all event body payload coming from this
+      # source will be JSON
+      jsonBody: true
+      # id of your project
+      projectID: "argo-events-235100"
+      # (optional) id of project for topic, same as projectID by default
+      # topicProjectID: "project-id"
+      # topic name
+      topic: "test"
+      # Refers to path of the credential file that is mounted in the gateway pod.
+      credentialsFile: "/creds/key.json"
